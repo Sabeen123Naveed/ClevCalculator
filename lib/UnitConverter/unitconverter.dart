@@ -1,7 +1,10 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:share/share.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../admob/admob_testingids.dart';
 import '../buttons.dart';
@@ -20,6 +23,7 @@ class _UnitConverterState extends State<UnitConverter> with TickerProviderStateM
     fontSize: 25.0,
     fontWeight: FontWeight.w700,
   );
+  FocusNode _firstFocusNode = FocusNode();
   AnimationController? _animationController;
   Animation<Offset>? _animation;
 
@@ -39,6 +43,7 @@ class _UnitConverterState extends State<UnitConverter> with TickerProviderStateM
   String _toMesaures = 'Kilometers';
   String _results = "";
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  TextEditingController value = TextEditingController();
 
   final Map<String, int> _mesauresMap = {
     'Meters': 0,
@@ -106,6 +111,10 @@ class _UnitConverterState extends State<UnitConverter> with TickerProviderStateM
     _animationController!.dispose();
     _bannerAd.dispose();
   }
+  Future<void> _saveAppState() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('lastScreenIndex', 1);// Set a key-value pair to indicate that the app is resumed
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -115,8 +124,29 @@ class _UnitConverterState extends State<UnitConverter> with TickerProviderStateM
           drawer: MyDrawer(),
           appBar: AppBar(
             title: Text('Unit Converter'),
-            centerTitle: true,
             elevation: 0.0,
+              actions: [
+                IconButton(
+                    onPressed: (){
+                      setState(() {
+                        value.clear();
+                        _results = "";
+                      });
+
+                    },
+                    icon: Icon(Icons.delete)
+                ),
+                IconButton(
+                  icon: Icon(Icons.share),
+                  onPressed: () {
+                    Share.share(
+                        ' ${_results} \n'
+
+
+                    );
+                  },
+                ),
+              ]
           ),
           bottomNavigationBar: isBannerAdLoaded ?
           Container(
@@ -146,7 +176,11 @@ class _UnitConverterState extends State<UnitConverter> with TickerProviderStateM
                          child: Text('No'),
                        ),
                        TextButton(
-                         onPressed: () =>  exit(0),
+                         onPressed: () async {
+                           Navigator.pop(context, true); // close the dialog
+                           SystemNavigator.pop();
+                           await _saveAppState();// exit the app
+                         },
                          /* exit(0) will close the app */
                          child: Text('Yes'),
                        ),
@@ -163,6 +197,8 @@ class _UnitConverterState extends State<UnitConverter> with TickerProviderStateM
                   child: Column(
                     children: [
                       TextField(
+                        controller: value,
+                        focusNode: _firstFocusNode,
                         decoration: InputDecoration(
                           labelText: 'Enter the Value',
                         ),

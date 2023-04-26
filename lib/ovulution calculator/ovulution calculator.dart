@@ -1,11 +1,11 @@
-import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'dart:async';
 import 'package:intl/intl.dart';
 import 'package:share/share.dart';
-
+import 'package:shared_preferences/shared_preferences.dart';
 import '../admob/admob_testingids.dart';
 import '../buttons.dart';
 
@@ -16,9 +16,10 @@ class OvulationCalculator extends StatefulWidget {
 
 class _OvulationCalculatorState extends State<OvulationCalculator> with TickerProviderStateMixin {
    DateTime _startDate = DateTime.now();
-  int _averageCycle = 28;
-  int _averagePeriod = 5;
-  bool _reminder = false;
+  int _averageCycle = 0;
+  int _averagePeriod = 0;
+   DateTime ovulationDate = DateTime.now();
+  // bool _reminder = false;
    AnimationController? _animationController;
    Animation<Offset>? _animation;
    FocusNode _firstFocusNode = FocusNode();
@@ -27,6 +28,7 @@ class _OvulationCalculatorState extends State<OvulationCalculator> with TickerPr
    final TextEditingController AveragePeriod= TextEditingController();
    final TextEditingController date= TextEditingController();
    final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
   Future<void> _selectStartDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -80,7 +82,14 @@ class _OvulationCalculatorState extends State<OvulationCalculator> with TickerPr
      _animationController!.dispose();
      _bannerAd.dispose();
    }
-
+   Future<void> _saveAppState() async {
+     final prefs = await SharedPreferences.getInstance();
+     await prefs.setInt('lastScreenIndex', 10);// Set a key-value pair to indicate that the app is resumed
+   }
+    void ovulationdate(){
+      ovulationDate = _startDate.add(Duration(
+          days: (_averageCycle - _averagePeriod * 2).toInt()));
+    }
 
    @override
   Widget build(BuildContext context) {
@@ -105,10 +114,11 @@ class _OvulationCalculatorState extends State<OvulationCalculator> with TickerPr
                     icon: Icon(Icons.share),
                     onPressed: () {
                       Share.share(
-                          'Start date of last period :  ${date}\n'
+                          'Start date of last period :  ${DateFormat.yMMMMd().format(_startDate)}\n'
                               'Average cycle (days) :   ${_averageCycle}\n'
                               'Average period (days) :  ${_averagePeriod}\n'
-                              // 'Ovulation date :  \$${}\n'
+                               'Ovulation date : ${DateFormat.yMMMMd().format(ovulationDate)}\n'
+
 
                       );
                     },
@@ -144,7 +154,11 @@ class _OvulationCalculatorState extends State<OvulationCalculator> with TickerPr
                             child: Text('No'),
                           ),
                           TextButton(
-                            onPressed: () =>  exit(0),
+                            onPressed: () async {
+                              Navigator.pop(context, true); // close the dialog
+                              SystemNavigator.pop();
+                              await _saveAppState();// exit the app
+                            },
                             /* exit(0) will close the app */
                             child: Text('Yes'),
                           ),
@@ -184,38 +198,35 @@ class _OvulationCalculatorState extends State<OvulationCalculator> with TickerPr
                   onChanged: (value) =>
                       setState(() => _averagePeriod = int.parse(value)),
               ),
-              CheckboxListTile(
-                  value: _reminder,
-                  onChanged: (value) => setState(() => _reminder = value!),
-                  title: Text('Reminder'),
-              ),
-              TextButton(
-                  style: TextButton.styleFrom(
-                      backgroundColor: Colors.cyan,
-                      padding: EdgeInsets.all(18)
-                  ),
-              onPressed: () {
-          // Calculate ovulation date and show it in a dialog
-          DateTime ovulationDate = _startDate.add(Duration(
-                  days: (_averageCycle - _averagePeriod * 2).toInt()));
-          showDialog(
-                  context: context,
-                  builder: (BuildContext context) {
-              return AlertDialog(
-                    title: Text('Ovulation date'),
-                    content: Text(DateFormat.yMMMMd().format(ovulationDate)),
-                    actions: [
-                    TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-        child: Text('Close'),
-        ),
-                    ],
-              );
-                  },
-          );
-              },
+              // CheckboxListTile(
+              //     value: _reminder,
+              //     onChanged: (value) => setState(() => _reminder = value!),
+              //     title: Text('Reminder'),
+              // ),
+                         SizedBox(height: 16),
+                        ElevatedButton(
+                       onPressed: () {
+                         ovulationdate();
+                         showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                        return AlertDialog(
+                          title: Text('Ovulation date'),
+                          content: Text(DateFormat.yMMMMd().format(ovulationDate)),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              child: Text('Close'),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  }
+                  ,
                   child: Text('Calculate'),
-              ),
+                ),
+
                       ],
                   ),
                 ),

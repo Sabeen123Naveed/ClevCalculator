@@ -2,8 +2,10 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:share/share.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../admob/admob_testingids.dart';
 import '../buttons.dart';
@@ -19,6 +21,8 @@ class _BMICalculatorState extends State<BMICalculator> with TickerProviderStateM
   int _feet = 5;
   int _inches = 5;
   double _weight = 0.0;
+  bool _feetFocused = false;
+  bool _inchesFocused = false;
   int _age = 0 ;
   Gender _gender = Gender.male;
   double _bmi = 0;
@@ -89,7 +93,10 @@ class _BMICalculatorState extends State<BMICalculator> with TickerProviderStateM
     }
   }
 
-
+  Future<void> _saveAppState() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('lastScreenIndex', 7);// Set a key-value pair to indicate that the app is resumed
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -154,7 +161,12 @@ class _BMICalculatorState extends State<BMICalculator> with TickerProviderStateM
                           child: Text('No'),
                         ),
                         TextButton(
-                          onPressed: () =>  exit(0),
+                          onPressed: () async {
+                            Navigator.pop(context, true); // close the dialog
+                            SystemNavigator.pop();
+                            await _saveAppState();// exit the app
+                          },
+
                           /* exit(0) will close the app */
                           child: Text('Yes'),
                         ),
@@ -173,49 +185,62 @@ class _BMICalculatorState extends State<BMICalculator> with TickerProviderStateM
                     children: [
                          Center(child: Text("Height", style: TextStyle(fontSize: 18),)),
                       SizedBox(height: 15,),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: DropdownButtonFormField<int>(
-                              decoration: InputDecoration(
-                                labelText: 'Feet',
-                              ),
-                              value: _feet,
-                              onChanged: (value) {
-                                setState(() {
-                                  _feet = value!;
-                                });
-                              },
-                              items: List.generate(8, (index) {
-                                return DropdownMenuItem<int>(
-                                  value: index + 1,
-                                  child: Text('${index + 1} ft'),
-                                );
-                              }),
-                            ),
-                          ),
-                          SizedBox(width: 16),
-                          Expanded(
-                            child: DropdownButtonFormField<int>(
-                              decoration: InputDecoration(
-                                labelText: 'Inches',
-                              ),
-                              value: _inches,
-                              onChanged: (value) {
-                                setState(() {
-                                  _inches = value!;
-                                });
-                              },
-                              items: List.generate(12, (index) {
-                                return DropdownMenuItem<int>(
-                                  value: index,
-                                  child: Text('${index} in'),
-                                );
-                              }),
-                            ),
-                          ),
-                        ],
+                Row(
+                  children: [
+                    Expanded(
+                      child: DropdownButtonFormField<int>(
+                        decoration: InputDecoration(
+                          labelText: 'Feet',
+                        ),
+                        value: _feet,
+                        onChanged: (value) {
+                          setState(() {
+                            _feet = value!;
+                          });
+                        },
+                        style: TextStyle(color: _feetFocused || _feet != 5 ? Colors.black : Colors.grey),
+                        onTap: () {
+                          setState(() {
+                            _feetFocused = true;
+                          });
+                        },
+                        items: List.generate(8, (index) {
+                          return DropdownMenuItem<int>(
+                            value: index + 1,
+                            child: Text('${index + 1} ft'),
+                          );
+                        }),
                       ),
+                    ),
+                    SizedBox(width: 16),
+                    Expanded(
+                      child: DropdownButtonFormField<int>(
+                        decoration: InputDecoration(
+                          labelText: 'Inches',
+                        ),
+                        value: _inches,
+                        onChanged: (value) {
+                          setState(() {
+                            _inches = value!;
+                          });
+                        },
+                        style: TextStyle(color: _inchesFocused || _inches != 5 ? Colors.black : Colors.grey),
+                        onTap: () {
+                          setState(() {
+                            _inchesFocused = true;
+                          });
+                        },
+                        items: List.generate(12, (index) {
+                          return DropdownMenuItem<int>(
+                            value: index,
+                            child: Text('${index} in'),
+                          );
+                        }),
+                      ),
+                    ),
+                  ],
+                ),
+
                       SizedBox(height: 16),
                       TextFormField(
                         controller: weightcontroller,
@@ -237,58 +262,58 @@ class _BMICalculatorState extends State<BMICalculator> with TickerProviderStateM
                         },
                       ),
                       SizedBox(height: 16),
-                      TextFormField(
-                        controller: agecontroller,
-                          focusNode: _secondFocusNode,
-                          decoration: InputDecoration(
-                            labelText: 'Age',
-                          ),
-                          keyboardType: TextInputType.number,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter your age';
-                            }
-                            return null;
-                          },
-                          onChanged: (value) {
-                            setState(() {
-                              _age = int.parse(value);
-                            });
-                          }),
-                      SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ListTile(
-                              title: Text('Male'),
-                              leading: Radio<Gender>(
-                                value: Gender.male,
-                                groupValue: _gender,
-                                onChanged: (value) {
-                                  setState(() {
-                                    _gender = value!;
-                                  });
-                                },
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: ListTile(
-                              title: Text('Female'),
-                              leading: Radio<Gender>(
-                                value: Gender.female,
-                                groupValue: _gender,
-                                onChanged: (value) {
-                                  setState(() {
-                                    _gender = value!;
-                                  });
-                                },
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 16),
+                      // TextFormField(
+                      //   controller: agecontroller,
+                      //     focusNode: _secondFocusNode,
+                      //     decoration: InputDecoration(
+                      //       labelText: 'Age',
+                      //     ),
+                      //     keyboardType: TextInputType.number,
+                      //     validator: (value) {
+                      //       if (value == null || value.isEmpty) {
+                      //         return 'Please enter your age';
+                      //       }
+                      //       return null;
+                      //     },
+                      //     onChanged: (value) {
+                      //       setState(() {
+                      //         _age = int.parse(value);
+                      //       });
+                      //     }),
+                      // SizedBox(height: 16),
+                      // Row(
+                      //   children: [
+                      //     Expanded(
+                      //       child: ListTile(
+                      //         title: Text('Male'),
+                      //         leading: Radio<Gender>(
+                      //           value: Gender.male,
+                      //           groupValue: _gender,
+                      //           onChanged: (value) {
+                      //             setState(() {
+                      //               _gender = value!;
+                      //             });
+                      //           },
+                      //         ),
+                      //       ),
+                      //     ),
+                      //     Expanded(
+                      //       child: ListTile(
+                      //         title: Text('Female'),
+                      //         leading: Radio<Gender>(
+                      //           value: Gender.female,
+                      //           groupValue: _gender,
+                      //           onChanged: (value) {
+                      //             setState(() {
+                      //               _gender = value!;
+                      //             });
+                      //           },
+                      //         ),
+                      //       ),
+                      //     ),
+                      //   ],
+                      // ),
+                      // SizedBox(height: 16),
                       ElevatedButton(
                         onPressed: () {
                           setState(() {

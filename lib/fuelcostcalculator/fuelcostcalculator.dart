@@ -1,17 +1,19 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:share/share.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../admob/admob_testingids.dart';
 import '../buttons.dart';
-class FuelForm extends StatefulWidget {
+class FuelCostCalculator extends StatefulWidget {
   @override
-  _FuelFormState createState() => _FuelFormState();
+  _FuelCostCalculatorState createState() => _FuelCostCalculatorState();
 }
 
 
-class _FuelFormState extends State<FuelForm> with TickerProviderStateMixin{
+class _FuelCostCalculatorState extends State<FuelCostCalculator> with TickerProviderStateMixin{
   AnimationController? _animationController;
   Animation<Offset>? _animation;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
@@ -65,6 +67,10 @@ class _FuelFormState extends State<FuelForm> with TickerProviderStateMixin{
     super.dispose();
     _animationController!.dispose();
     _bannerAd.dispose();
+  }
+  Future<void> _saveAppState() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('lastScreenIndex', 5);// Set a key-value pair to indicate that the app is resumed
   }
 
   @override
@@ -136,7 +142,12 @@ class _FuelFormState extends State<FuelForm> with TickerProviderStateMixin{
                             child: Text('No'),
                           ),
                           TextButton(
-                            onPressed: () =>  exit(0),
+                            onPressed: () async {
+                              Navigator.pop(context, true); // close the dialog
+                              SystemNavigator.pop();
+                              await _saveAppState();// exit the app
+                            },
+
                             /* exit(0) will close the app */
                             child: Text('Yes'),
                           ),

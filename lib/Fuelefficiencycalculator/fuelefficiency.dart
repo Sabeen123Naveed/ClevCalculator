@@ -1,8 +1,10 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:share/share.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../admob/admob_testingids.dart';
 import '../buttons.dart';
@@ -31,11 +33,11 @@ class _FuelEfficencyCalculatorState extends State<FuelEfficencyCalculator> with 
   FocusNode _secondFocusNode = FocusNode();
   FocusNode _thirdFocusNode = FocusNode();
   FocusNode _fourthFocusNode = FocusNode();
-
+  String _selectedMileageUnit = 'miles';
+  String _amountrefuled = 'gallons';
   void _calculateFuelEfficiency() {
-    double fuelConsumed = _amountRefueled - _remainingFuelBeforeRefueling;
     double totalDistanceDriven = _mileageAfterDriving - _mileageBeforeRefueling;
-    _fuelEfficiency = totalDistanceDriven / fuelConsumed;
+    _fuelEfficiency = totalDistanceDriven / _amountRefueled;
   }
   late BannerAd _bannerAd;
   bool isBannerAdLoaded = false;
@@ -77,6 +79,10 @@ class _FuelEfficencyCalculatorState extends State<FuelEfficencyCalculator> with 
     super.dispose();
     _animationController!.dispose();
     _bannerAd.dispose();
+  }
+  Future<void> _saveAppState() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('lastScreenIndex', 6);// Set a key-value pair to indicate that the app is resumed
   }
 
   @override
@@ -152,7 +158,11 @@ class _FuelEfficencyCalculatorState extends State<FuelEfficencyCalculator> with 
                             child: Text('No'),
                           ),
                           TextButton(
-                            onPressed: () =>  exit(0),
+                            onPressed: () async {
+                              Navigator.pop(context, true); // close the dialog
+                              SystemNavigator.pop();
+                              await _saveAppState();// exit the app
+                            },
                             /* exit(0) will close the app */
                             child: Text('Yes'),
                           ),
@@ -170,81 +180,189 @@ class _FuelEfficencyCalculatorState extends State<FuelEfficencyCalculator> with 
                       position: _animation!,
                       child: Column(
                         children: [
-                          TextFormField(
-                            controller: mileberef,
-                            focusNode: _firstFocusNode,
-                            decoration: InputDecoration(labelText: 'Mileage before refueling'),
-                          //  keyboardType: TextInputType.number,
-                            onChanged: (value) {
-                              setState(() {
-                                _mileageBeforeRefueling = double.parse(value);
-                              });
-                            },
-                          ),
-                          TextFormField(
-                            controller: remainfuel,
-                            focusNode: _secondFocusNode,
-                            decoration: InputDecoration(labelText: 'Remaining fuel before refueling'),
-                          //  keyboardType: TextInputType.number,
-                            onChanged: (value) {
-                              setState(() {
-                                _remainingFuelBeforeRefueling = double.parse(value);
-                              });
-                            },
-                          ),
-                          TextFormField(
-                            controller: amountrefuled,
-                            focusNode: _thirdFocusNode,
-                            decoration: InputDecoration(labelText: 'Amount refueled'),
-                            //keyboardType: TextInputType.number,
-                            onChanged: (value) {
-                              setState(() {
-                                _amountRefueled = double.parse(value);
-                              });
-                            },
-                          ),
-                          TextFormField(
-                            controller: mileafter,
-                            focusNode: _fourthFocusNode,
-                            decoration: InputDecoration(labelText: 'Mileage after driving'),
-                            //keyboardType: TextInputType.number,
-                            onChanged: (value) {
-                              setState(() {
-                                _mileageAfterDriving = double.parse(value);
-                              });
-                            },
-                          ),
-                          SizedBox(height: 20,),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 10.0),
-                            child: AnimatedBuilder(
-                            animation: _animationController!,
-                            builder: (context, child) {
-                              return Container(
-                                width: 200.0,
-                                height: 50.0,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(25.0),
-                                  color:  Colors.cyan,
-                                ),
-                                child: TextButton(
-                                  onPressed: () {
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextFormField(
+                                  controller: mileberef,
+                                  focusNode: _firstFocusNode,
+                                  decoration: InputDecoration(
+                                    labelText: 'Mileage before refueling',
+                                    suffix: Text(_selectedMileageUnit), // Display the selected unit as suffix
+                                  ),
+                                  onChanged: (value) {
                                     setState(() {
-                                      _calculateFuelEfficiency();
+                                      _mileageBeforeRefueling = double.parse(value);
                                     });
                                   },
-                                  child: Text(
-                                     'Calculate Value',
-
-                                  ),
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return 'Please enter a mileage';
+                                    }
+                                    return null;
+                                  },
+                                  keyboardType: TextInputType.number,
                                 ),
-                              );
+                              ),
+                              SizedBox(width: 66), // Add some spacing between the TextFormField and DropdownButton
+                              DropdownButton<String>(
+                                value: _selectedMileageUnit,
+                                items: [
+                                  DropdownMenuItem<String>(
+                                    value: 'miles',
+                                   // Set the height of the dropdown menu item
+                                   child: Text('miles')
+                              ),
+
+                                  DropdownMenuItem<String>(
+                                    value: 'Km',
+                                   child: Text('Km')
+                                  ),
+
+                                ],
+                                onChanged: (value) {
+                                  setState(() {
+                                    _selectedMileageUnit = value!;
+                                  });
+                                },
+
+                              ),
+                            ],
+                          ),
+                          // TextFormField(
+                          //   controller: remainfuel,
+                          //   focusNode: _secondFocusNode,
+                          //   decoration: InputDecoration(labelText: 'Remaining fuel before refueling'),
+                          // //  keyboardType: TextInputType.number,
+                          //   onChanged: (value) {
+                          //     setState(() {
+                          //       if (value.isNotEmpty && !value.endsWith("%")) {
+                          //         remainfuel.text = value + "%";
+                          //         // Set the cursor position after the last entered digit
+                          //         remainfuel.selection = TextSelection.fromPosition(
+                          //             TextPosition(offset: remainfuel.text.length - 1));
+                          //       }
+                          //       String valueWithoutPercent = value.replaceAll("%", "");
+                          //       _remainingFuelBeforeRefueling = double.tryParse(valueWithoutPercent) ?? 0.0;
+                          //
+                          //     });
+                          //     // setState(() {
+                          //     //   _remainingFuelBeforeRefueling = double.parse(value);
+                          //     // });
+                          //   },
+                          // ),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextFormField(
+                                  controller: amountrefuled,
+                                  focusNode: _thirdFocusNode,
+                                  decoration: InputDecoration(
+                                    labelText: 'Amount refueled',
+                                    suffix: Text(_amountrefuled), // Display the selected unit as suffix
+                                  ),
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _amountRefueled = double.parse(value);
+                                    });
+                                  },
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return 'Please enter amount refuled';
+                                    }
+                                    return null;
+                                  },
+                                  keyboardType: TextInputType.number,
+                                ),
+                              ),
+                              SizedBox(width: 55), // Add some spacing between the TextFormField and DropdownButton
+                              DropdownButton<String>(
+                                value: _amountrefuled,
+                                items: [
+                                  DropdownMenuItem<String>(
+                                      value: 'gallons',
+                                      // Set the height of the dropdown menu item
+                                      child: Text('gallons')
+                                  ),
+
+                                  DropdownMenuItem<String>(
+                                      value: 'litres',
+                                      child: Text('litres')
+                                  ),
+
+                                ],
+                                onChanged: (value) {
+                                  setState(() {
+                                    _amountrefuled = value!;
+                                  });
+                                },
+
+                              ),
+                            ],
+                          ),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextFormField(
+                                  controller:  mileafter,
+                                  focusNode: _fourthFocusNode,
+                                  decoration: InputDecoration(
+                                    labelText: 'Mileage after driving',
+                                    suffix: Text(_selectedMileageUnit), // Display the selected unit as suffix
+                                  ),
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _mileageAfterDriving  = double.parse(value);
+                                    });
+                                  },
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return 'Please enter a mileage';
+                                    }
+                                    return null;
+                                  },
+                                  keyboardType: TextInputType.number,
+                                ),
+                              ),
+                              SizedBox(width: 66), // Add some spacing between the TextFormField and DropdownButton
+                              DropdownButton<String>(
+                                value: _selectedMileageUnit,
+                                items: [
+                                  DropdownMenuItem<String>(
+                                      value: 'miles',
+                                      child: Text('miles')
+                                  ),
+
+                                  DropdownMenuItem<String>(
+                                      value: 'Km',
+                                      child: Text('Km')
+                                  ),
+
+                                ],
+                                onChanged: (value) {
+                                  setState(() {
+                                    _selectedMileageUnit = value!;
+                                  });
+                                },
+
+                              ),
+                            ],
+                          ),
+
+                          SizedBox(height: 20,),
+                          ElevatedButton(
+                            onPressed: () {
+                              setState(() {
+                                _calculateFuelEfficiency();
+                              });
                             }
+                            ,
+                            child: Text('Calculate'),
                           ),
-                          ),
+
                           SizedBox(height: 20,),
 
-                          Text('Fuel efficiency: $_fuelEfficiency')
+                          Text('Fuel efficiency: ${_fuelEfficiency.toStringAsFixed(2)} ${_selectedMileageUnit}/${ _amountrefuled}')
                         ],
                       ),
                     ),

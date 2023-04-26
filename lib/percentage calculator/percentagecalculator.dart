@@ -1,8 +1,9 @@
-import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:share/share.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../admob/admob_testingids.dart';
 import '../buttons.dart';
@@ -72,7 +73,10 @@ class _PercentageCalculatorState extends State<PercentageCalculator> with Ticker
     _animationController!.dispose();
     _bannerAd.dispose();
   }
-
+  Future<void> _saveAppState() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('lastScreenIndex', 11);// Set a key-value pair to indicate that the app is resumed
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -81,7 +85,7 @@ class _PercentageCalculatorState extends State<PercentageCalculator> with Ticker
           key: _scaffoldKey,
           drawer: MyDrawer(),
           appBar: AppBar(
-            title: Text("Percentage Cal"),
+            title: Text("Percentage "),
               actions: [
                 IconButton(
                     onPressed: (){
@@ -139,7 +143,11 @@ class _PercentageCalculatorState extends State<PercentageCalculator> with Ticker
                             child: Text('No'),
                           ),
                           TextButton(
-                            onPressed: () =>  exit(0),
+                            onPressed: () async {
+                              Navigator.pop(context, true); // close the dialog
+                              SystemNavigator.pop();
+                              await _saveAppState();// exit the app
+                            },
                             /* exit(0) will close the app */
                             child: Text('Yes'),
                           ),
@@ -173,8 +181,10 @@ class _PercentageCalculatorState extends State<PercentageCalculator> with Ticker
                       ),
                       Padding(
                         padding: const EdgeInsets.only(left: 15 , right: 15),
-                        child: TextFormField(
-                          focusNode: _secondFocusNode,
+                       child: TextFormField(
+                         keyboardType: TextInputType.numberWithOptions(decimal: true),
+                         inputFormatters: [FilteringTextInputFormatter.allow(RegExp('[0-9.,]+')),],
+                         focusNode: _secondFocusNode,
                           controller: percentage,
                           decoration: InputDecoration(labelText: 'Percentage'),
                           validator: (value) {
@@ -183,27 +193,36 @@ class _PercentageCalculatorState extends State<PercentageCalculator> with Ticker
                             }
                             return null;
                           },
-                          onSaved: (value) {
-                            _percentage = double.parse(value!);
+                          onChanged: (value) {
+                            setState(() {
+                              if (value.isNotEmpty && !value.endsWith("%")) {
+                                percentage.text = value + "%";
+                                // Set the cursor position after the last entered digit
+                                percentage.selection = TextSelection.fromPosition(
+                                    TextPosition(offset: percentage.text.length - 1));
+                              }
+                              String valueWithoutPercent = value.replaceAll("%", "");
+                              _percentage  = double.tryParse(valueWithoutPercent) ?? 0.0;
+
+                            });
+
+
+
+                               // _percentage = double.parse(value);
                           },
                         ),
+                       ),
+                      SizedBox(height: 20,),
+                      ElevatedButton(
+                        onPressed: () {
+                          if (_formKey.currentState!.validate()) {
+                            _formKey.currentState!.save();
+                            _calculateResult();
+                          }
+                        },
+                        child: Text('Calculate'),
                       ),
-                      Container(
-                        margin: EdgeInsets.only(top: 20),
-                        child: TextButton(
-                          style: TextButton.styleFrom(
-                              backgroundColor: Colors.cyan,
-                              padding: EdgeInsets.all(18)
-                          ),
-                          onPressed: () {
-                            if (_formKey.currentState!.validate()) {
-                              _formKey.currentState!.save();
-                              _calculateResult();
-                            }
-                          },
-                          child: Text('Calculate'),
-                        ),
-                      ),
+
                       Container(
                         margin: EdgeInsets.only(top: 20),
                         child: Text(
@@ -220,6 +239,7 @@ class _PercentageCalculatorState extends State<PercentageCalculator> with Ticker
     );
   }
 }
+
 
 
 

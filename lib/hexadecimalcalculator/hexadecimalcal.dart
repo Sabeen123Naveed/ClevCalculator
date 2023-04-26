@@ -1,7 +1,10 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:share/share.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../admob/admob_testingids.dart';
 import '../buttons.dart';
 
@@ -15,6 +18,8 @@ class _HexCalculatorState extends State<HexCalculator> with TickerProviderStateM
 
   final TextEditingController controller1 = TextEditingController();
   final TextEditingController controller3 = TextEditingController();
+  FocusNode _firstFocusNode = FocusNode();
+  FocusNode _secondFocusNode = FocusNode();
   AnimationController? _animationController;
   Animation<Offset>? _animation;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
@@ -61,7 +66,10 @@ class _HexCalculatorState extends State<HexCalculator> with TickerProviderStateM
     _animationController!.dispose();
     _bannerAd.dispose();
   }
-
+  Future<void> _saveAppState() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('lastScreenIndex', 8);// Set a key-value pair to indicate that the app is resumed
+  }
 
 
 
@@ -84,11 +92,22 @@ class _HexCalculatorState extends State<HexCalculator> with TickerProviderStateM
                  controller3.clear();
                  hexx = '';
                  decc = '';
+                 _firstFocusNode.requestFocus();
                  });
 
                  },
             icon: Icon(Icons.delete)
             ),
+                IconButton(
+                  icon: Icon(Icons.share),
+                  onPressed: () {
+                    Share.share(
+                        ' Hex value :  ${hexx}\n'
+                            " Decimal value :  ${decc}"
+
+                    );
+                  },
+                ),
            ]
           ),
           bottomNavigationBar: isBannerAdLoaded ?
@@ -119,7 +138,11 @@ class _HexCalculatorState extends State<HexCalculator> with TickerProviderStateM
                           child: Text('No'),
                         ),
                         TextButton(
-                          onPressed: () =>  exit(0),
+                          onPressed: () async {
+                            Navigator.pop(context, true); // close the dialog
+                            SystemNavigator.pop();
+                            await _saveAppState();// exit the app
+                          },
                           /* exit(0) will close the app */
                           child: Text('Yes'),
                         ),
@@ -130,82 +153,81 @@ class _HexCalculatorState extends State<HexCalculator> with TickerProviderStateM
             },
             child: SlideTransition(
               position: _animation!,
-              child: Column(
-                  children: [
-                    Text("Decimal to Hex",style: TextStyle(fontSize: 25,fontWeight: FontWeight.bold),),
-                //  SizedBox(height: 5),
-                   Padding(
-                     padding: const EdgeInsets.only(left: 15 , right: 15),
-                     child: TextFormField(
-                      controller: controller1,
-                      decoration:InputDecoration(
-                        // hintText: '10',
-                        hoverColor:  Colors.cyan,
-
+              child: SingleChildScrollView(
+                child: Column(
+                    children: [
+                      SizedBox(
+                        height: 20,
                       ),
-                ),
-                   ),
-
-                SizedBox(
-                  height: 10,
-                ),
-                TextButton(
-                    onPressed: (){
-                      Convert();
-                    },
-                    child: Text("Convert"),
-                  style: TextButton.styleFrom(
-                    backgroundColor: Colors.cyan,
-                    padding: EdgeInsets.all(18)
-                  ),
-                ),
-                    SizedBox(
-                      height: 10,
-                    ),
-
-                Text(" Hex value :  ${hexx}",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500),
-
-                ),
-
-
-                SizedBox(
-                  height: 10,
-                ),
-                    Text("Hex to Decimal",style:TextStyle(fontSize: 25,fontWeight: FontWeight.bold)),
-                   // SizedBox(height: 5),
-                    Padding(
-                      padding: const EdgeInsets.only(left: 15 , right: 15),
-                      child: TextFormField(
-                        controller: controller3,
+                      Text("Decimal to Hex",style: TextStyle(fontSize: 25,fontWeight: FontWeight.bold),),
+                  //  SizedBox(height: 5),
+                     Padding(
+                       padding: const EdgeInsets.only(left: 15 , right: 15),
+                       child: TextFormField(
+                         focusNode: _firstFocusNode,
+                        controller: controller1,
+                         maxLength: 19,
                         decoration:InputDecoration(
-                            // hintText: '16',
-                            hoverColor:  Colors.cyan
+                          hintText: 'Enter decimal value',
+                          hoverColor:  Colors.cyan,
+
+                        ),
+                  ),
+                     ),
+
+                  SizedBox(
+                    height: 10,
+                  ),
+                      ElevatedButton(
+                        onPressed: Convert,
+                        child: Text('Convert'),
+                      ),
+
+                      SizedBox(
+                        height: 10,
+                      ),
+
+                  Text(" Hex value :  ${hexx}",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500),
+
+                  ),
+
+
+                  SizedBox(
+                    height: 10,
+                  ),
+                      Text("Hex to Decimal",style:TextStyle(fontSize: 25,fontWeight: FontWeight.bold)),
+                     // SizedBox(height: 5),
+                      Padding(
+                        padding: const EdgeInsets.only(left: 15 , right: 15),
+                        child: TextFormField(
+                          controller: controller3,
+                          maxLength: 16,
+                          focusNode: _secondFocusNode,
+                          decoration:InputDecoration(
+                               hintText: 'Enter hex value',
+                              hoverColor:  Colors.cyan
+                          ),
                         ),
                       ),
-                    ),
-                    SizedBox(
-                      height: 10,
-                    ),
-                    TextButton(
-                        onPressed: (){
-                          convert1();
-                        },
-                        child: Text("Convert"),
-                      style: TextButton.styleFrom(
-                          backgroundColor: Colors.cyan,
-                          padding: EdgeInsets.all(18)
+                      SizedBox(
+                        height: 10,
                       ),
-                    ),
-                    SizedBox(
-                      height: 10,
-                    ),
-                    Text(" Decimal value :  ${decc}",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500),
+                      ElevatedButton(
+                        onPressed: convert1,
+                        child: Text('Convert'),
+                      ),
 
-                    ),
+                      SizedBox(
+                        height: 10,
+                      ),
+                      Text(" Decimal value :  ${decc}",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500),
+
+                      ),
 
 
-                ]
-                ),
+                  ]
+                  ),
+              ),
             ),
           ),
           ),

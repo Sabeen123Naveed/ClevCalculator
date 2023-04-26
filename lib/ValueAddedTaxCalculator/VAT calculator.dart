@@ -2,8 +2,10 @@ import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:share/share.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../admob/admob_testingids.dart';
 import '../buttons.dart';
@@ -66,6 +68,10 @@ class _VatCalculatorState extends State<VatCalculator> with TickerProviderStateM
     super.dispose();
     _animationController!.dispose();
     _bannerAd.dispose();
+  }
+  Future<void> _saveAppState() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('lastScreenIndex', 14);// Set a key-value pair to indicate that the app is resumed
   }
 
   @override
@@ -132,7 +138,11 @@ class _VatCalculatorState extends State<VatCalculator> with TickerProviderStateM
                           child: Text('No'),
                         ),
                         TextButton(
-                          onPressed: () =>  exit(0),
+                          onPressed: () async {
+                            Navigator.pop(context, true); // close the dialog
+                            SystemNavigator.pop();
+                            await _saveAppState();// exit the app
+                          },
                           /* exit(0) will close the app */
                           child: Text('Yes'),
                         ),
@@ -148,6 +158,9 @@ class _VatCalculatorState extends State<VatCalculator> with TickerProviderStateM
                   Padding(
                     padding: const EdgeInsets.only(left: 15 , right: 15),
                     child: TextFormField(
+                      keyboardType: TextInputType.numberWithOptions(decimal: true),
+                      inputFormatters: [FilteringTextInputFormatter.allow(RegExp('[0-9.,]+')),],
+
                       controller: taxrate,
                       focusNode: _firstFocusNode,
                       decoration: InputDecoration(labelText: 'Tax Rate'),

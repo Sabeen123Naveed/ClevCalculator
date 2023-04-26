@@ -2,8 +2,10 @@ import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:share/share.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../admob/admob_testingids.dart';
 import '../buttons.dart';
@@ -18,7 +20,6 @@ class _LoanCalculatorState extends State<LoanCalculator> with TickerProviderStat
   double _loanAmount = 0;
   int _loanPeriod = 0;
   double _interestRate = 0;
-  int _interestOnlyPeriod = 0;
   double _totalInterest = 0;
   double _totalPayment = 0;
   double _monthlyPayment = 0;
@@ -34,7 +35,7 @@ class _LoanCalculatorState extends State<LoanCalculator> with TickerProviderStat
   FocusNode _firstFocusNode = FocusNode();
   FocusNode _secondFocusNode = FocusNode();
   FocusNode _thirdFocusNode = FocusNode();
-  FocusNode _fourthFocusNode = FocusNode();
+
 
   void _calculate() {
     setState(() {
@@ -100,7 +101,10 @@ class _LoanCalculatorState extends State<LoanCalculator> with TickerProviderStat
     _bannerAd.dispose();
   }
 
-
+  Future<void> _saveAppState() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('lastScreenIndex', 9);// Set a key-value pair to indicate that the app is resumed
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -117,7 +121,6 @@ class _LoanCalculatorState extends State<LoanCalculator> with TickerProviderStat
                            _loanAmount = 0;
                            _loanPeriod = 0;
                            _interestRate = 0;
-                           _interestOnlyPeriod = 0;
                            _totalInterest = 0;
                            _totalPayment = 0;
                            _monthlyPayment = 0;
@@ -140,7 +143,6 @@ class _LoanCalculatorState extends State<LoanCalculator> with TickerProviderStat
                           ' Loan Amount : ${_loanAmount}\n'
                               'Loan Period (in months): ${ _loanPeriod}\n'
                               ' Interest Rate (%) : ${_interestRate}\n'
-                              'Interest-only Period (in months) : ${_interestOnlyPeriod} \n'
                               'Total Interest: ${_totalInterest.toStringAsFixed(2)} \n'
 
                               'Total Payment: ${_totalPayment.toStringAsFixed(2)} '
@@ -159,146 +161,207 @@ class _LoanCalculatorState extends State<LoanCalculator> with TickerProviderStat
 
 
             ):SizedBox(),
-              body:  WillPopScope(
-                onWillPop: () async {
-                  if (_scaffoldKey.currentState!.isDrawerOpen) {
-                    // if drawer is open, close it and consume the back button
-                    _scaffoldKey.currentState!.openEndDrawer();
-                    return false;
-                  } else {
-                    // if drawer is not open, allow the back button to close the app
-                    return await showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: Text('Confirm Exit'),
-                          content: Text('Are you sure you want to exit?'),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.of(context).pop(false),
-                              child: Text('No'),
-                            ),
-                            TextButton(
-                              onPressed: () =>  exit(0),
-                              /* exit(0) will close the app */
-                              child: Text('Yes'),
-                            ),
-                          ],
-                        )
-                    );
-                  }
-                },
-                child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                            child: SlideTransition(
-                              position: _animation!,
-                                  child: Column(
-                                    children: [
-                                      TextField(
-                                          controller: Loanamount,
-                                          focusNode: _firstFocusNode,
+              body: SingleChildScrollView(
+                child: WillPopScope(
+                  onWillPop: () async {
+                    if (_scaffoldKey.currentState!.isDrawerOpen) {
+                      // if drawer is open, close it and consume the back button
+                      _scaffoldKey.currentState!.openEndDrawer();
+                      return false;
+                    } else {
+                      // if drawer is not open, allow the back button to close the app
+                      return await showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: Text('Confirm Exit'),
+                            content: Text('Are you sure you want to exit?'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.of(context).pop(false),
+                                child: Text('No'),
+                              ),
+                              TextButton(
+                                onPressed: () async {
+                                  Navigator.pop(context, true); // close the dialog
+                                  SystemNavigator.pop();
+                                  await _saveAppState();// exit the app
+                                },
+                                /* exit(0) will close the app */
+                                child: Text('Yes'),
+                              ),
+                            ],
+                          )
+                      );
+                    }
+                  },
+                  child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                              child: SlideTransition(
+                                position: _animation!,
+                                    child: Column(
+                                      children: [
+                                        TextField(
+                                            controller: Loanamount,
+                                            focusNode: _firstFocusNode,
+                                            decoration: InputDecoration(
+                                              hintText: 'Loan Amount',
+                                            ),
+                                           // keyboardType: TextInputType.number,
+                                            onChanged: (value) {
+                                              _loanAmount = double.parse(value);
+                                            },
+                                          ),
+                                    TextField(
+                                          controller: loanperiod,
+                                      focusNode: _secondFocusNode,
                                           decoration: InputDecoration(
-                                            hintText: 'Loan Amount',
+                                            hintText: 'Loan Period (in months)',
                                           ),
                                          // keyboardType: TextInputType.number,
                                           onChanged: (value) {
-                                            _loanAmount = double.parse(value);
-                                          },
-                                        ),
-                                  TextField(
-                                        controller: loanperiod,
-                                    focusNode: _secondFocusNode,
-                                        decoration: InputDecoration(
-                                          hintText: 'Loan Period (in months)',
-                                        ),
-                                       // keyboardType: TextInputType.number,
-                                        onChanged: (value) {
-                                          _loanPeriod = int.parse(value);
-                                        },
-                                      ),
-
-                                      TextField(
-                                          controller: InterestRate,
-                                        focusNode: _thirdFocusNode,
-                                          decoration: InputDecoration(
-                                            hintText: 'Interest Rate (%)',
-                                          ),
-                                         // keyboardType: TextInputType.number,
-                                          onChanged: (value) {
-                                            _interestRate = double.parse(value);
+                                            _loanPeriod = int.parse(value);
                                           },
                                         ),
 
-                                   TextField(
-                                        controller: InterestonlyPeriod,
-                                     focusNode: _fourthFocusNode,
-                                        decoration: InputDecoration(
-                                          hintText: 'Interest-only Period (in months)',
-                                        ),
-                                       // keyboardType: TextInputType.number,
-                                        onChanged: (value) {
-                                          _interestOnlyPeriod = int.parse(value);
-                                        },
-                                      ),
+                                        TextField(
+                                          keyboardType: TextInputType.numberWithOptions(decimal: true),
+                                          inputFormatters: [FilteringTextInputFormatter.allow(RegExp('[0-9.,]+')),],
 
-                                      SizedBox(
-                                        height: 5,
-                                      ),
-                                       TextButton(
-                                          style: TextButton.styleFrom(
-                                              backgroundColor: Colors.cyan,
-                                              padding: EdgeInsets.all(18)
+                                            controller: InterestRate,
+                                          focusNode: _thirdFocusNode,
+                                            decoration: InputDecoration(
+                                              hintText: 'Interest Rate (%)',
+                                            ),
+                                            onChanged: (value) {
+                                              setState(() {
+                                                if (value.isNotEmpty && !value.endsWith("%")) {
+                                                  InterestRate.text = value + "%";
+                                                  // Set the cursor position after the last entered digit
+                                                  InterestRate.selection = TextSelection.fromPosition(
+                                                      TextPosition(offset: InterestRate.text.length - 1));
+                                                }
+                                                String valueWithoutPercent = value.replaceAll("%", "");
+                                                _interestRate = double.tryParse(valueWithoutPercent) ?? 0.0;
+
+                                              });
+                                              // _interestRate = double.parse(value);
+                                            },
                                           ),
+
+                                        SizedBox(
+                                          height: 15,
+                                        ),
+
+                                        ElevatedButton(
+                                            onPressed: () {
+                                              // Remove the focus from the text field and hide the keyboard
+                                              FocusScope.of(context).unfocus();
+                                              _calculate();
+                                            },
+
                                           child: Text('Calculate'),
-                                          onPressed: _calculate,
                                         ),
 
-                                      SizedBox(
-                                        height: 5,
-                                      ),
-                                     Text(
-                                        'Total Interest: ${_totalInterest.toStringAsFixed(2)}',
-                                        style: TextStyle(
-                                          fontSize: 20,
+                                        SizedBox(
+                                          height: 5,
                                         ),
-                                      ),
-                                      SizedBox(
-                                        height: 5,
-                                      ),
-                                      Text(
-                                          'Total Payment: ${_totalPayment.toStringAsFixed(2)}',
+                                       Text(
+                                          'Total Interest: ${_totalInterest.toStringAsFixed(2)}',
                                           style: TextStyle(
                                             fontSize: 20,
                                           ),
+                                        ),
+                                        SizedBox(
+                                          height: 5,
+                                        ),
+                                        Text(
+                                            'Total Payment: ${_totalPayment.toStringAsFixed(2)}',
+                                            style: TextStyle(
+                                              fontSize: 20,
+                                            ),
 
+                                          ),
+
+                                        SizedBox(
+                                          height: 16,
+                                        ),
+                                        Table(
+                                          border: TableBorder.all(),
+                                          children: [
+                                            TableRow(
+                                              decoration: BoxDecoration(color: Colors.grey[200]),
+                                              children: [
+                                                TableCell(
+                                                  child: Padding(
+                                                    padding: const EdgeInsets.all(8.0),
+                                                    child: Text('Month'),
+                                                  ),
+                                                ),
+                                                TableCell(
+                                                  child: Padding(
+                                                    padding: const EdgeInsets.all(8.0),
+                                                    child: Text('Monthly Payment'),
+                                                  ),
+                                                ),
+                                                TableCell(
+                                                  child: Padding(
+                                                    padding: const EdgeInsets.all(8.0),
+                                                    child: Text('Remaining Balance'),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            for (var data in _monthlyData)
+                                              TableRow(
+                                                children: [
+                                                  TableCell(
+                                                    child: Padding(
+                                                      padding: const EdgeInsets.all(8.0),
+                                                      child: Text(data['month'].toString()),
+                                                    ),
+                                                  ),
+                                                  TableCell(
+                                                    child: Padding(
+                                                      padding: const EdgeInsets.all(8.0),
+                                                      child: Text(data['monthlyPayment'].toStringAsFixed(2)),
+                                                    ),
+                                                  ),
+                                                  TableCell(
+                                                    child: Padding(
+                                                      padding: const EdgeInsets.all(8.0),
+                                                      child: Text(data['remainingBalance'].toStringAsFixed(2)),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                          ],
                                         ),
 
-                                      SizedBox(
-                                        height: 16,
-                                      ),
-                                      Expanded(
-                                        child: ListView.builder(
-                                            itemCount: _monthlyData.length,
-                                            itemBuilder: (context, index) {
-                                              return Container(
-                                                margin: EdgeInsets.only(bottom: 16),
-                                                child: Column(
-                                                  mainAxisAlignment: MainAxisAlignment.start,
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text("Month    Monthly Payment     Remaining Balance"),
-                                                    Text('  ${_monthlyData[index]['month']}              ${_monthlyData[index]['monthlyPayment'].toStringAsFixed(2)}                  ${_monthlyData[index]['remainingBalance'].toStringAsFixed(2)}'),
-
-                                                  ],
-                                                ),
-                                              );
-                                            },
-                                          ),
-                                      ),
-                                    ],
+                                        // Expanded(
+                                        //   child: ListView.builder(
+                                        //       itemCount: _monthlyData.length,
+                                        //       itemBuilder: (context, index) {
+                                        //         return Container(
+                                        //           margin: EdgeInsets.only(bottom: 16),
+                                        //           child: Column(
+                                        //             mainAxisAlignment: MainAxisAlignment.start,
+                                        //             crossAxisAlignment: CrossAxisAlignment.start,
+                                        //             children: [
+                                        //               Text("Month    Monthly Payment     Remaining Balance"),
+                                        //               Text('  ${_monthlyData[index]['month']}              ${_monthlyData[index]['monthlyPayment'].toStringAsFixed(2)}                  ${_monthlyData[index]['remainingBalance'].toStringAsFixed(2)}'),
+                                        //
+                                        //             ],
+                                        //           ),
+                                        //         );
+                                        //       },
+                                        //     ),
+                                        // ),
+                                      ],
+                                    ),
                                   ),
-                                ),
 
-                            ),
+                              ),
+                ),
               ),
                         ),
 

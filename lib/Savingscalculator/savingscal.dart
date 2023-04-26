@@ -1,9 +1,11 @@
 import 'dart:io';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:scientificcal/buttons.dart';
 import 'package:share/share.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../admob/admob_testingids.dart';
 class SavingsCalculator extends StatefulWidget {
@@ -95,7 +97,10 @@ class _SavingsCalculatorState extends State<SavingsCalculator> with TickerProvid
     _bannerAd.dispose();
   }
 
-
+  Future<void> _saveAppState() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('lastScreenIndex', 12);// Set a key-value pair to indicate that the app is resumed
+  }
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -175,7 +180,11 @@ class _SavingsCalculatorState extends State<SavingsCalculator> with TickerProvid
                           child: Text('No'),
                         ),
                         TextButton(
-                          onPressed: () => exit(0),
+                          onPressed: () async {
+                            Navigator.pop(context, true); // close the dialog
+                            SystemNavigator.pop();
+                            await _saveAppState();// exit the app
+                          },
                           /* exit(0) will close the app */
                           child: Text('Yes'),
                         ),
@@ -218,15 +227,26 @@ class _SavingsCalculatorState extends State<SavingsCalculator> with TickerProvid
                       ),
                       TextField(
                         decoration: InputDecoration(labelText: 'Interest Rate'),
+                        keyboardType: TextInputType.numberWithOptions(decimal: true),
+                        inputFormatters: [FilteringTextInputFormatter.allow(RegExp('[0-9.,]+')),],
+
                         focusNode: _secondFocusNode,
                        controller: InterestRate,
                         onChanged: (value) {
                           setState(() {
-                            if (!InterestRate.text.endsWith("%")) {
+                            if (value.isNotEmpty && !value.endsWith("%")) {
                               InterestRate.text = value + "%";
+                              // Set the cursor position after the last entered digit
+                              InterestRate.selection = TextSelection.fromPosition(
+                                  TextPosition(offset: InterestRate.text.length - 1));
                             }
-                            _interestRate = double.parse(value);
+                            String valueWithoutPercent = value.replaceAll("%", "");
+                            _interestRate   = double.tryParse(valueWithoutPercent) ?? 0.0;
+
                           });
+
+
+
                         },
 
                       ),
@@ -241,32 +261,39 @@ class _SavingsCalculatorState extends State<SavingsCalculator> with TickerProvid
                         },
                       ),
                       TextField(
+                        keyboardType: TextInputType.numberWithOptions(decimal: true),
+                        inputFormatters: [FilteringTextInputFormatter.allow(RegExp('[0-9.,]+')),],
+
                         decoration: InputDecoration(labelText: 'Interest Income Tax Rate'),
                         focusNode: _fourthFocusNode,
                         controller: tax,
                         onChanged: (String value) {
                           setState(() {
-                            if (!tax.text.endsWith("%")) {
+                            if (value.isNotEmpty && !value.endsWith("%")) {
                               tax.text = value + "%";
+                              // Set the cursor position after the last entered digit
+                              tax.selection = TextSelection.fromPosition(
+                                  TextPosition(offset: tax.text.length - 1));
                             }
-                            _interestIncomeTaxRate = double.parse(value);
+                            String valueWithoutPercent = value.replaceAll("%", "");
+                            _interestIncomeTaxRate   = double.tryParse(valueWithoutPercent) ?? 0.0;
+
                           });
+
                         },
                       ),
-                      Container(
-                        margin: EdgeInsets.only(top: 16.0),
-                        child: TextButton(
-                          style: TextButton.styleFrom(
-                              backgroundColor: Colors.cyan,
-                              padding: EdgeInsets.all(18)
-                          ),
-                          child: Text('Calculate'),
-                          onPressed: () {
+                      SizedBox(height:10),
+                      ElevatedButton(
+
+                        onPressed: () {
+
+                          setState(() {
                             _calculateInterest();
-                            setState(() {});
-                          },
-                        ),
+                          });
+                        },
+                        child: Text('Calculate'),
                       ),
+
                       Container(
                         margin: EdgeInsets.only(top: 16.0),
                      child: Text(

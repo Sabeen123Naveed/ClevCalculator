@@ -1,12 +1,14 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:scientificcal/hexadecimalcalculator/hexadecimalcal.dart';
 import 'package:scientificcal/percentage%20calculator/percentagecalculator.dart';
 import 'package:scientificcal/unitpricecalculator/unitprice.dart';
+import 'BMICalculator/bmi calculator.dart';
 import 'DateCalculator/datecalculator.dart';
 import 'DiscountCalculator/discountcalculator.dart';
 import 'Fuelefficiencycalculator/fuelefficiency.dart';
-import 'HealthCalculator/health calculator.dart';
+
 import 'Savingscalculator/savingscal.dart';
 import 'Tip Calculator/tipcalculator.dart';
 import 'UnitConverter/unitconverter.dart';
@@ -24,7 +26,7 @@ class MyButton extends StatelessWidget {
   final Color textColor;
   // final TextStyle textStyle = TextStyle(fontWeight: FontWeight.bold)
 
-  const MyButton({Key? key, required this.title, this.color = Colors.white, this.textColor = Colors.black, required this.onPress}) : super(key: key);
+  const MyButton({Key? key, required this.title, this.color = Colors.white, this.textColor = Colors.black, required this.onPress }) : super(key: key) ;
 
   @override
   Widget build(BuildContext context) {
@@ -50,6 +52,7 @@ class MyButton extends StatelessWidget {
 class MyListTile extends StatelessWidget {
   final VoidCallback onPress;
   final String title;
+  // final String? value;
   const MyListTile({Key? key, required this.onPress, required this.title}) : super(key: key);
 
   @override
@@ -69,6 +72,7 @@ class MyDrawer extends StatefulWidget {
 }
 
 class _MyDrawerState extends State<MyDrawer> {
+
   @override
   void initState() {
     super.initState();
@@ -76,100 +80,155 @@ class _MyDrawerState extends State<MyDrawer> {
   @override
   Widget build(BuildContext context) {
     return Drawer(
-                    child: ListView(
-                    children: [
-                      Container(
-                        height: 200,
-                        child: DrawerHeader(
-                            decoration: BoxDecoration(
-                              color: Colors.black87,
-                            ),
-                            child: Column(
-                              children: [
-                                ListTile(
-                                  onTap: (){
+                       child: ListView(
+                           children:
+                           [
+                             Container(
+                               height: 200,
+                               child: DrawerHeader(
+                                   decoration: BoxDecoration(
+                                     color: Colors.black87,
+                                   ),
+                                   child: Column(
+                                     children: [
+                                       Padding(
+                                         padding: const EdgeInsets.only(top:60),
+                                         child: Text(
+                                           "Clev Calculator",
+                                           style: TextStyle(
+                                               fontSize: 30 ,
+                                               fontWeight: FontWeight.bold,
+                                             color: Colors.white
+                                           ),
 
-                                  },
-                                  leading: Icon(Icons.settings, color: Colors.white,),
-                                  title: Text("Settings", style: TextStyle(color: Colors.white, fontSize: 15),),
-                                ),
-                                ListTile(
-                                  onTap: (){},
-                                  leading: Icon(Icons.lock_open, color: Colors.white,),
-                                  title: Text("Remove Ads", style: TextStyle(color: Colors.white, fontSize: 15),),
-                                ),
-                                ListTile(
-                                  onTap: (){
-                                    Navigator.push(context, MaterialPageRoute(builder: (context) =>Help()));
-                                  },
-                                  leading: Icon(Icons.question_mark_rounded, color: Colors.white,),
-                                  title: Text("Usage tips", style: TextStyle(color: Colors.white, fontSize: 15),),
-                                ),
-                              ],
-                            )
-                        ),
-                      ),
+                                         ),
+                                       )
+                                       // ListTile(
+                                       //   onTap: () {
+                                       //
+                                       //   },
+                                       //   leading: Icon(Icons.settings,
+                                       //     color: Colors.white,),
+                                       //   title: Text(
+                                       //     "Settings", style: TextStyle(
+                                       //       color: Colors.white,
+                                       //       fontSize: 15),),
+                                       // ),
+                                       // ListTile(
+                                       //   onTap: () {},
+                                       //   leading: Icon(Icons.lock_open,
+                                       //     color: Colors.white,),
+                                       //   title: Text(
+                                       //     "Remove Ads", style: TextStyle(
+                                       //       color: Colors.white,
+                                       //       fontSize: 15),),
+                                       // ),
+                                       // ListTile(
+                                       //   onTap: () {
+                                       //     Navigator.push(context,
+                                       //         MaterialPageRoute(
+                                       //             builder: (context) =>
+                                       //                 Help()));
+                                       //   },
+                                       //   leading: Icon(
+                                       //     Icons.question_mark_rounded,
+                                       //     color: Colors.white,),
+                                       //   title: Text(
+                                       //     "Usage tips", style: TextStyle(
+                                       //       color: Colors.white,
+                                       //       fontSize: 15),),
+                                       // ),
+                                     ],
+                                   )
+                               ),
+                             ),
 
-                     Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Text("Favourites", style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),),
-                      ),
-                      MyListTile(onPress: (){
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => ScientificCalculator()));
-                      }, title: "Basic Calculator",),
-                      MyListTile(onPress: (){
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => UnitConverter()));
-                      }, title: "Unit Converter",),
-                      MyListTile(onPress: (){
-                        Navigator.push(context, MaterialPageRoute(builder: (context) =>  DiscountCalculator()));
-                      }, title: "Discount Calculator",),
-                      MyListTile(onPress: (){
-                        Navigator.push(context, MaterialPageRoute(builder: (context) =>  TipCalculator()));
-                      }, title: "Tip Calculator",),
+                             Padding(
+                               padding: const EdgeInsets.all(8.0),
+                               child: Text("Favourites", style: TextStyle(
+                                   color: Colors.blue,
+                                   fontWeight: FontWeight.bold),),
+                             ),
+                             MyListTile(
+                               onPress: () {
+                                 Navigator.push(context, MaterialPageRoute(
+                                     builder: (context) =>
+                                         ScientificCalculator()));
+                               }, title: "Basic Calculator",),
+                             MyListTile(onPress: () {
+                               Navigator.push(context, MaterialPageRoute(
+                                   builder: (context) => UnitConverter()));
+                             }, title: "Unit Converter",),
+                             MyListTile(onPress: () {
 
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Text("All Calculators", style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),),
-                      ),
-                      MyListTile(onPress: (){
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => DateCalculator()));
-                      }, title: "Date Calculator",),
-                      MyListTile(onPress: (){
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => FuelForm()));
-                      }, title: "Fuel Cost Calculator",),
-                      MyListTile(onPress: (){
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => FuelEfficencyCalculator()));
-                      }, title: "Fuel Efficiency Calculator",),
-                      MyListTile(onPress: (){
-                         Navigator.push(context, MaterialPageRoute(builder: (context) => BMICalculator()));
-                      }, title: "BMI Calculator",),
-                      MyListTile(onPress: (){
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => HexCalculator()));
-                      }, title: "Hexadecimal Calculator",),
-                      MyListTile(onPress: (){
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => LoanCalculator()));
-                      },
-                        title: "Loan Calculator",),
-                      MyListTile(onPress: (){
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => OvulationCalculator()));
-                      }, title: "Ovulation Calculator",),
-                      MyListTile(onPress: (){
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => PercentageCalculator()));
-                      }, title: "Percentage Calulator",),
-                      MyListTile(onPress: (){
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => SavingsCalculator()));
-                      }, title: "Savings Calculator",),
-                      MyListTile(onPress: (){
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => UnitPrice()));
-                      }, title: "Unit Price Calculator",),
-                      MyListTile(onPress: (){
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => VatCalculator()));
-                      }, title: "VAT Calculator",),
-                      ]
-                    )
+                               Navigator.push(context, MaterialPageRoute(
+                                   builder: (context) => DiscountCalculator()));
+                             }, title: "Discount Calculator",),
+                             MyListTile(onPress: () {
+                               Navigator.push(context, MaterialPageRoute(
+                                   builder: (context) => TipCalculator()));
+                             }, title: "Tip Calculator",),
+
+                             Padding(
+                               padding: const EdgeInsets.all(8.0),
+                               child: Text("All Calculators", style: TextStyle(
+                                   color: Colors.blue,
+                                   fontWeight: FontWeight.bold),),
+                             ),
+                             MyListTile(onPress: () {
+                               Navigator.push(context, MaterialPageRoute(
+                                   builder: (context) => DateCalculator()));
+                             }, title: "Date Calculator",),
+                             MyListTile(onPress: () {
+                               Navigator.push(context, MaterialPageRoute(
+                                   builder: (context) => FuelCostCalculator()));
+                             }, title: "Fuel Cost Calculator",),
+                             MyListTile(onPress: () {
+                               Navigator.push(context, MaterialPageRoute(
+                                   builder: (context) =>
+                                       FuelEfficencyCalculator()));
+                             }, title: "Fuel Efficiency Calculator",),
+                             MyListTile(onPress: () {
+                               Navigator.push(context, MaterialPageRoute(
+                                   builder: (context) => BMICalculator()));
+                             }, title: "BMI Calculator",),
+                             MyListTile(onPress: () {
+                               Navigator.push(context, MaterialPageRoute(
+                                   builder: (context) => HexCalculator()));
+                             }, title: "Hexadecimal Calculator",),
+                             MyListTile(onPress: () {
+                               Navigator.push(context, MaterialPageRoute(
+                                   builder: (context) => LoanCalculator()));
+                             },
+                               title: "Loan Calculator",),
+                             MyListTile(onPress: () {
+                               Navigator.push(context, MaterialPageRoute(
+                                   builder: (context) =>
+                                       OvulationCalculator()));
+                             }, title: "Ovulation Calculator",),
+                             MyListTile(onPress: () {
+                               Navigator.push(context, MaterialPageRoute(
+                                   builder: (context) =>
+                                       PercentageCalculator()));
+                             }, title: "Percentage Calulator",),
+                             MyListTile(onPress: () {
+                               Navigator.push(context, MaterialPageRoute(
+                                   builder: (context) => SavingsCalculator()));
+                             }, title: "Savings Calculator",),
+                             MyListTile(onPress: () {
+                               Navigator.push(context, MaterialPageRoute(
+                                   builder: (context) => UnitPrice()));
+                             }, title: "Unit Price Calculator",),
+                             MyListTile(onPress: () {
+                               Navigator.push(context, MaterialPageRoute(
+                                   builder: (context) => VatCalculator()));
+                             }, title: "VAT Calculator",),
+                           ]
+
+                       )
+
       );
 
 
   }
 }
-

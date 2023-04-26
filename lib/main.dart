@@ -7,27 +7,23 @@ import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:scientificcal/basiccalculator/scientificcalculator.dart';
 import 'package:scientificcal/splash%20screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'DateCalculator/modelclass.dart';
 import 'buttons.dart';
 
 
 
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
   final document = await getApplicationDocumentsDirectory();
   Hive.init(document.path);
   Hive.registerAdapter(ModelAdapter());
   await Hive.openBox<Model>("date box");
   runApp(
-      ChangeNotifierProvider<ThemeProvider>
-        (
-        create:(_) =>
-        ThemeProvider()..initialize(),
-
-        child:  MyApp(),
-      ),
-
+        MyApp(),
   );
 }
 

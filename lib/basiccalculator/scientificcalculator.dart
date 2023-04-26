@@ -1,11 +1,8 @@
-
-
-import 'dart:io';
-
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-
 import 'package:math_expressions/math_expressions.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../admob/admob_testingids.dart';
 import '../buttons.dart';
 import 'constants.dart';
@@ -17,9 +14,6 @@ String operators = '';
 String equation = '0';
 String result = '';
 
-
-
-
 class ScientificCalculator extends StatefulWidget {
   @override
   _ScientificCalculatorState createState() => _ScientificCalculatorState();
@@ -30,6 +24,7 @@ class _ScientificCalculatorState extends State<ScientificCalculator> {
   late BannerAd _bannerAd;
   bool isBannerAdLoaded = false;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
   initBannerAd() {
     _bannerAd = BannerAd(size: AdSize.banner,
       adUnitId: AdmobManager.banner_id,
@@ -50,33 +45,23 @@ class _ScientificCalculatorState extends State<ScientificCalculator> {
     );
     _bannerAd.load();
   }
+
   @override
-  void initState()  {
+  void initState() {
     super.initState();
     initBannerAd();
     initialise();
   }
 
   @override
-  void disposeState(){
+  void disposeState() {
     super.dispose();
     _bannerAd.dispose();
   }
-
-
- /* @override
-  void initState() {
-    super.initState();
-    initialise();
-  }*/
-
   String expression = '';
   double equationFontSize = 35.0;
   double resultFontSize = 25.0;
-
   void initialise() {}
-
-
   void _onPressed({ String? buttonText}) {
     switch (buttonText) {
       case EXCHANGE_CALCULATOR:
@@ -93,6 +78,9 @@ class _ScientificCalculatorState extends State<ScientificCalculator> {
       case DEL_SIGN:
         setState(() {
           if (scientificKeyboard) {
+            equationFontSize = 35.0;
+            resultFontSize = 25.0;
+
             equationFontSize = 35.0;
             resultFontSize = 25.0;
             equation = equation.substring(0, equation.length - 1);
@@ -215,11 +203,13 @@ class _ScientificCalculatorState extends State<ScientificCalculator> {
     });
   }
 
+
+
   void _simpleResult() {
     setState(() {
       equationFontSize = 25.0;
       resultFontSize = 35.0;
-      expression = firstOperand + operators + secondOperand ;
+      expression = firstOperand + operators + secondOperand;
       expression = expression.replaceAll('×', '*');
       expression = expression.replaceAll('÷', '/');
 
@@ -248,10 +238,13 @@ class _ScientificCalculatorState extends State<ScientificCalculator> {
       if (value == ARCCOS_SIGN) value = 'arccos';
       if (value == ARCTAN_SIGN) value = 'arctan';
       if (value == DECIMAL_POINT_SIGN) {
+
         if (equation[equation.length - 1] == DECIMAL_POINT_SIGN) return;
       }
 
-      equation == ZERO ? equation = value : equation += value;
+        equation == ZERO ? equation = value : equation += value;
+
+
     });
   }
 
@@ -259,7 +252,7 @@ class _ScientificCalculatorState extends State<ScientificCalculator> {
     setState(() {
       equationFontSize = 25.0;
       resultFontSize = 35.0;
-      expression = equation;
+      expression =   equation;
       expression = expression.replaceAll('×', '*');
       expression = expression.replaceAll('÷', '/');
       expression = expression.replaceAll(PI, '3.1415926535897932');
@@ -269,129 +262,152 @@ class _ScientificCalculatorState extends State<ScientificCalculator> {
       expression = expression.replaceAll(ARCSIN_SIGN, 'arcsin');
       expression = expression.replaceAll(ARCCOS_SIGN, 'arccos');
       expression = expression.replaceAll(ARCTAN_SIGN, 'arctan');
-      expression = expression.replaceAll(MODULAR_SIGN , '%');
+      expression = expression.replaceAll(MODULAR_SIGN, '%');
+
+        try {
+          Parser p = Parser();
+          Expression exp = p.parse(expression);
+          ContextModel cm = ContextModel();
+          result = '${exp.evaluate(EvaluationType.REAL, cm)}';
+          if (result == 'NaN') result = CALCULATE_ERROR;
+          _isIntResult();
+
+          equation= result;
+          result = '';
+
+        }
+        catch (e) {
+          result = CALCULATE_ERROR;
+        }
 
 
-      try {
-        Parser p = Parser();
-        Expression exp = p.parse(expression);
-        ContextModel cm = ContextModel();
-        result = '${exp.evaluate(EvaluationType.REAL, cm)}';
-        if (result == 'NaN') result = CALCULATE_ERROR;
-        _isIntResult();
-      } catch (e) {
-        result = CALCULATE_ERROR;
-      }
     });
   }
+
+
 
   _isIntResult() {
     if (result.toString().endsWith(".0")) {
       result = int.parse(result.toString().replaceAll(".0", "")).toString();
     }
   }
+  Future<void> _saveAppState() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('lastScreenIndex', 16);// Set a key-value pair to indicate that the app is resumed
+  }
 
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-        child: Scaffold(
-          key: _scaffoldKey,
-          drawer: MyDrawer(),
-          appBar: AppBar(
-            title: Text('Basic Calculator'),
-            centerTitle: true,
-            elevation: 0.0,
-          ),
-          bottomNavigationBar: isBannerAdLoaded ?
-          Container(
-            padding: EdgeInsets.symmetric(vertical: 5),
-            width: _bannerAd.size.width.toDouble(),
-            height: _bannerAd.size.height.toDouble(),
-            child: AdWidget(ad: _bannerAd ),
+      child: Scaffold(
+        key: _scaffoldKey,
+        drawer: MyDrawer(),
+        appBar: AppBar(
+          title: Text('Basic Calculator'),
+          centerTitle: true,
+          elevation: 0.0,
+        ),
+        bottomNavigationBar: isBannerAdLoaded ?
+        Container(
+          padding: EdgeInsets.symmetric(vertical: 5),
+          width: _bannerAd.size.width.toDouble(),
+          height: _bannerAd.size.height.toDouble(),
+          child: AdWidget(ad: _bannerAd),
 
 
-          ):SizedBox(),
-          body:  WillPopScope(
-            onWillPop: () async {
-              if (_scaffoldKey.currentState!.isDrawerOpen) {
-                // if drawer is open, close it and consume the back button
-                _scaffoldKey.currentState!.openEndDrawer();
-                return false;
-              } else {
-                // if drawer is not open, allow the back button to close the app
-                return await showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                  title: Text('Confirm Exit'),
-                  content: Text('Are you sure you want to exit?'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(false),
-                      child: Text('No'),
-                    ),
-                    TextButton(
-                      onPressed: () =>  exit(0),
-                      /* exit(0) will close the app */
-                      child: Text('Yes'),
-                    ),
-                  ],
-                )
-                );
-              }
-            },
-            child: Container(
-              child: Column(
-                children: [
-                  // Load a Lottie file from your assets
-                //  Lottie.asset('assets/liquid.json'),
-                  Expanded(child: Container()),
-                  Container(
-                    color: Colors.black12,
-                    alignment: Alignment.topRight,
-                    padding: EdgeInsets.only(left: 20.0, right: 20.0),
-                    child: SingleChildScrollView(
-                      child: !scientificKeyboard
-                          ? Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          _inOutExpression(firstOperand, equationFontSize),
-                          operators != ''
-                              ? _inOutExpression(operators, equationFontSize)
-                              : Container(),
-                          secondOperand != ''
-                              ? _inOutExpression(secondOperand, equationFontSize)
-                              : Container(),
-                          result != ''
-                              ? _inOutExpression(result, resultFontSize)
-                              : Container(),
+        ) : SizedBox(),
+        body: WillPopScope(
+          onWillPop: () async {
+            if (_scaffoldKey.currentState!.isDrawerOpen) {
+              // if drawer is open, close it and consume the back button
+              _scaffoldKey.currentState!.openEndDrawer();
+              return false;
+            } else {
+              // if drawer is not open, allow the back button to close the app
+              return await showDialog(
+                  context: context,
+                  builder: (context) =>
+                      AlertDialog(
+                        title: Text('Confirm Exit'),
+                        content: Text('Are you sure you want to exit?'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(false),
+                            child: Text('No'),
+                          ),
+                          TextButton(
+
+                            onPressed: () async {
+                              Navigator.pop(context, true); // close the dialog
+                              SystemNavigator.pop();
+                              _saveAppState();
+                              // exit the app
+                            },
+
+                            /* exit(0) will close the app */
+                            child: Text('Yes'),
+                          ),
                         ],
                       )
-                          : Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          _inOutExpression(equation, equationFontSize),
-                          result != ''
-                              ? _inOutExpression(result, resultFontSize)
-                              : Container(),
-                        ],
-                      ),
+              );
+            }
+          },
+          child: Container(
+            child: Column(
+              children: [
+                // Load a Lottie file from your assets
+                //  Lottie.asset('assets/liquid.json'),
+                Expanded(child: Container()),
+                Container(
+                  color: Colors.black12,
+                  alignment: Alignment.topRight,
+                  padding: EdgeInsets.only(left: 20.0, right: 20.0),
+                  child: SingleChildScrollView(
+                    child: !scientificKeyboard
+                        ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        _inOutExpression(firstOperand, equationFontSize),
+                        operators != ''
+                            ? _inOutExpression(operators, equationFontSize)
+                            : Container(),
+                        secondOperand != ''
+                            ? _inOutExpression(
+                            secondOperand, equationFontSize)
+                            : Container(),
+                        result != ''
+                            ? _inOutExpression(result, resultFontSize)
+                            : Container(),
+                      ],
+                    )
+                        : Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+
+                        _inOutExpression(equation, equationFontSize),
+
+                        result != ''
+                            ? _inOutExpression(result, resultFontSize)
+                            : Container(),
+                      ],
                     ),
                   ),
-                  Keyboard(
-                    keyboardSigns: (scientificKeyboard)
-                        ? keyboardScientificCalculator
-                        : keyboardSingleCalculator,
-                    onTap: _onPressed,
-                  ),
-                ],
-              ),
+                ),
+                Keyboard(
+                  keyboardSigns: (scientificKeyboard)
+                      ? keyboardScientificCalculator
+                      : keyboardSingleCalculator,
+                  onTap: _onPressed,
+                ),
+              ],
             ),
           ),
         ),
-
+      ),
     );
   }
+
 
   Widget _inOutExpression(text, size) {
     return SingleChildScrollView(

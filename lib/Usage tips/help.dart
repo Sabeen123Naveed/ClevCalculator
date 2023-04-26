@@ -3,6 +3,10 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../buttons.dart';
 
 class Help extends StatefulWidget {
   const Help({Key? key}) : super(key: key);
@@ -13,11 +17,16 @@ class Help extends StatefulWidget {
 
 class _HelpState extends State<Help> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  Future<void> _saveAppState() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('lastScreenIndex', 15);// Set a key-value pair to indicate that the app is resumed
+  }
   @override
   Widget build(BuildContext context) {
     return SafeArea(
         child: Scaffold(
           key: _scaffoldKey,
+            drawer: MyDrawer(),
             appBar: AppBar(
               title: Text('Help'),
               centerTitle: true,
@@ -42,7 +51,11 @@ class _HelpState extends State<Help> {
                             child: Text('No'),
                           ),
                           TextButton(
-                            onPressed: () =>  exit(0),
+                            onPressed: () async {
+                              Navigator.pop(context, true); // close the dialog
+                              SystemNavigator.pop();
+                              await _saveAppState();// exit the app
+                            },
                             /* exit(0) will close the app */
                             child: Text('Yes'),
                           ),

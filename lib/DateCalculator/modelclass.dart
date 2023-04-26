@@ -10,4 +10,5 @@ class Model{
   final String days;
   Model({required this.eventname, required this.date, required this.days});
 
+
 }
